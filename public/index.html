@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Integración de Componentes - Semana 11</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 30px; background-color: #f4f4f9; }
+        h1 { color: #333; }
+        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); max-width: 500px; margin-bottom: 20px; }
+        ul { list-style-type: none; padding: 0; }
+        li { background: #eee; margin: 5px 0; padding: 10px; border-radius: 4px; display: flex; justify-content: space-between; }
+        .email { color: #666; font-size: 0.9em; }
+        input[type="text"], input[type="email"] { width: 95%; padding: 8px; margin: 8px 0; border: 1px solid #ccc; border-radius: 4px; }
+        button { background: #28a745; color: white; padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; width: 100%; }
+        button:hover { background: #218838; }
+        #mensaje { margin-top: 10px; font-weight: bold; color: #d9534f; }
+    </style>
+</head>
+<body>
+
+    <h1>Maqueta del Curso - Integración Backend</h1>
+
+    <div class="card">
+        <h3>Registrar Nuevo Usuario</h3>
+        <form id="formulario-usuario">
+            <label>Nombre:</label>
+            <input type="text" id="nombre" placeholder="Ej. Juan Pérez" required>
+            
+            <label>Correo Electrónico:</label>
+            <input type="email" id="email" placeholder="ejemplo@correo.com" required>
+            
+            <button type="submit">Guardar en MySQL</button>
+        </form>
+        <div id="mensaje"></div>
+    </div>
+
+    <div class="card">
+        <h3>Lista de Usuarios Registrados (Desde MySQL)</h3>
+        <ul id="lista-usuarios">
+            <li>Cargando datos...</li>
+        </ul>
+    </div>
+
+    <script>
+        // Cargar la lista al iniciar
+        async function cargarUsuarios() {
+            try {
+                const respuesta = await fetch('/api/usuarios');
+                const usuarios = await respuesta.json();
+                const listaUL = document.getElementById('lista-usuarios');
+                listaUL.innerHTML = '';
+
+                usuarios.forEach(usuario => {
+                    const li = document.createElement('li');
+                    li.innerHTML = `<strong>${usuario.nombre}</strong> <span class="email">${usuario.email}</span>`;
+                    listaUL.appendChild(li);
+                });
+            } catch (error) {
+                console.error('Error al cargar:', error);
+            }
+        }
+
+        // Criterio 6: Integración del evento de envío del formulario
+        document.getElementById('formulario-usuario').addEventListener('submit', async (e) => {
+            e.preventDefault(); // Evitar que la página se recargue
+
+            const nombre = document.getElementById('nombre').value;
+            const email = document.getElementById('email').value;
+            const divMensaje = document.getElementById('mensaje');
+
+            try {
+                // Envío de datos por método POST en formato JSON
+                const respuesta = await fetch('/api/usuarios', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ nombre, email })
+                });
+
+                const resultado = await respuesta.json();
+
+                if (respuesta.ok) {
+                    divMensaje.style.color = "#28a745";
+                    divMensaje.innerText = resultado.mensaje;
+                    document.getElementById('formulario-usuario').reset(); // Limpiar inputs
+                    cargarUsuarios(); // Recargar la lista automáticamente para ver el cambio
+                } else {
+                    divMensaje.style.color = "#d9534f";
+                    divMensaje.innerText = resultado.error;
+                }
+            } catch (error) {
+                divMensaje.innerText = "Error de conexión con el servidor";
+            }
+        });
+
+        window.onload = cargarUsuarios;
+    </script>
+</body>
+</html>
